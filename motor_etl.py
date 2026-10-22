@@ -86,7 +86,7 @@ def ejecutar_etl():
     lote_id = str(uuid.uuid4())[:8]
     
     # CONEXIÓN A LA BASE DE DATOS
-    db_url = "postgresql://postgres.vdvmyueufdfviztmribf:Velasco14062000**@aws-1-us-east-1.pooler.supabase.com:5432/postgres"
+    db_url = "postgresql+psycopg2://postgres.vdvmyueufdfviztmribf:Velasco14062000**@aws-1-us-east-1.pooler.supabase.com:5432/postgres"
     engine = create_engine(db_url)
     print("🔗 Conectado exitosamente a PostgreSQL en Supabase")
     

@@ -4,7 +4,6 @@ import pytz
 import warnings
 from ia_migraciones import analizar_migraciones
 from ia_rrss import analizar_rrss
-from legacy_.ia_cddiario import analizar_cddiario
 from ia_retenciones import analizar_retenciones   
 
 warnings.filterwarnings('ignore')
@@ -14,7 +13,7 @@ def ejecutar_motor_ia_completo(modo='horario'):
     print("===================================================")
     # 1. Configuración global
     tz_colombia = pytz.timezone('America/Bogota')
-    db_url = "postgresql://postgres.vdvmyueufdfviztmribf:Velasco14062000**@aws-1-us-east-1.pooler.supabase.com:5432/postgres"
+    db_url = "postgresql+psycopg2://postgres.vdvmyueufdfviztmribf:Velasco14062000**@aws-1-us-east-1.pooler.supabase.com:5432/postgres"
     try:
         engine = create_engine(db_url)
         print("🔗 Conectado exitosamente a Supabase para inyectar Machine Learning.")
