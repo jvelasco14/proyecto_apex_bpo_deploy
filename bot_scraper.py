@@ -12,7 +12,7 @@ def run(playwright: Playwright, es_fin_de_dia: bool = False) -> None:
     os.makedirs(carpeta_descargas, exist_ok=True)
     print(f"📁 Carpeta de descargas lista en: {carpeta_descargas}/")
 
-    browser = playwright.chromium.launch(headless=False, slow_mo=400)
+    browser = playwright.chromium.launch(headless=True, slow_mo=400)
     context = browser.new_context(accept_downloads=True)
     page = context.new_page()
 
