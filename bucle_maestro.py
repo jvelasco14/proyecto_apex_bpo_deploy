@@ -21,7 +21,7 @@ API_URL = "http://127.0.0.1:5000/api/set_hora/"
 LOTE_INICIAL = 6   # Simula las 06:00 (Genera corte hasta 06:59) -> Corre a las 07:00 físicas
 LOTE_FINAL = 16    # Simula las 16:00 (Genera corte hasta 16:59) -> Corre a las 17:00 físicas
 
-TIEMPO_ESPERA_ENTRE_HORAS = 5    # MODO TESIS: Segundos rápidos entre horas para la demostración
+TIEMPO_ESPERA_ENTRE_HORAS = 60    # MODO TESIS: Segundos rápidos entre horas para la demostración
 # TIEMPO_ESPERA_ENTRE_HORAS = 3600 # MODO PRODUCCIÓN: Descomentar para esperar 60 minutos reales
 
 TIEMPO_ESPERA_REINICIO = 300    # MODO TESIS: 5 minutos de pausa al final de la jornada
