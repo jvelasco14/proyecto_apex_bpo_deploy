@@ -989,5 +989,6 @@ app.include_router(rutas_protegidas)
 
 if __name__ == "__main__":
     print("🚀 Arrancando servidor FastAPI industrial...")
-    uvicorn.run("app:app", host="0.0.0.0", port=8090, reload=True)
+    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
     
+
