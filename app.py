@@ -1,4 +1,6 @@
 import os
+from dotenv import load_dotenv
+
 from fastapi import FastAPI, Request, Form, Depends, HTTPException, status, Response, APIRouter
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
@@ -13,15 +15,16 @@ import re
 import pytz
 from datetime import date, datetime
 
+load_dotenv() # Carga las variables del archivo .env
 # ==========================================
 # 🔗 CONEXIÓN A LA BASE DE DATOS (SUPABASE)
 # ==========================================
-SUPABASE_URL = "https://vdvmyueufdfviztmribf.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZkdm15dWV1ZmRmdml6dG1yaWJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MzI2MTAsImV4cCI6MjA5NjEwODYxMH0.JHxc5WePZakQq1TzjtCYP3GpEp09tjIMRIe13eUwqSo" 
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # 🔑 SÚPER CLIENTE ADMIN (Para crear usuarios y enviar correos)
-SUPABASE_SERVICE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZkdm15dWV1ZmRmdml6dG1yaWJmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MDUzMjYxMCwiZXhwIjoyMDk2MTA4NjEwfQ.epKlTFQdI1TDY8E5AgAO6BwDkXDuYy0MLGzCWn_XBjo"
+SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
 supabase_admin: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
 # ==========================================
@@ -986,4 +989,5 @@ app.include_router(rutas_protegidas)
 
 if __name__ == "__main__":
     print("🚀 Arrancando servidor FastAPI industrial...")
-    uvicorn.run("app:app", host="127.0.0.1", port=8000, reload=True)
+    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
+    
