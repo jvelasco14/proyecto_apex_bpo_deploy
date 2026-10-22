@@ -26,7 +26,7 @@ TIEMPO_ESPERA_ENTRE_HORAS = 60    # MODO TESIS: Segundos rápidos entre horas pa
 
 TIEMPO_ESPERA_REINICIO = 300    # MODO TESIS: 5 minutos de pausa al final de la jornada
 
-DB_URL = "postgresql://postgres.vdvmyueufdfviztmribf:Velasco14062000**@aws-1-us-east-1.pooler.supabase.com:5432/postgres"
+DB_URL = "postgresql+psycopg2://postgres.vdvmyueufdfviztmribf:Velasco14062000**@aws-1-us-east-1.pooler.supabase.com:5432/postgres"
 
 # FECHA QUEMADA DE PRUEBA (Para evitar que se borre el verdadero histórico de Supabase)
 FECHA_PRUEBA = '2025-06-26'
