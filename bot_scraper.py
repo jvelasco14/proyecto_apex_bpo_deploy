@@ -42,6 +42,7 @@ def run(playwright: Playwright, es_fin_de_dia: bool = False) -> None:
         def asegurar_menu_abierto():
             # Si el link de Base Transaccional no es visible, abre el menú principal
             if not page.locator("a", has_text="Base Transaccional (Chat)").is_visible():
+                page.locator("a").filter(has_text="Reportes Operativos").wait_for(state="visible", timeout=15000)
                 page.locator("a").filter(has_text="Reportes Operativos").click()
                 time.sleep(0.5)
 
@@ -63,6 +64,7 @@ def run(playwright: Playwright, es_fin_de_dia: bool = False) -> None:
             asegurar_menu_abierto()
             
             # Clic en el nombre del reporte
+            page.locator("a").filter(has_text=reporte).wait_for(state="visible", timeout=15000)
             page.locator("a").filter(has_text=reporte).click()
             time.sleep(0.5)
             
@@ -77,6 +79,7 @@ def run(playwright: Playwright, es_fin_de_dia: bool = False) -> None:
         # 5. IR A BANDEJA, FILTRAR Y DESCARGAR
         print("\n📥 Abriendo la bandeja de Reportes Exportados...")
         asegurar_menu_abierto()
+        page.locator("a").filter(has_text="Reportes Exportados").wait_for(state="visible", timeout=15000)
         page.locator("a").filter(has_text="Reportes Exportados").click()
         time.sleep(1)
 
