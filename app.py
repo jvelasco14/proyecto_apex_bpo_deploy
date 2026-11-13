@@ -64,12 +64,40 @@ templates = Jinja2Templates(directory="templates_ia")
 
 async def verificar_sesion(request: Request):
     token = request.cookies.get("access_token")
-    if not token: raise HTTPException(status_code=status.HTTP_307_TEMPORARY_REDIRECT, headers={"Location": "/login"})
+    if not token: 
+        raise HTTPException(status_code=status.HTTP_307_TEMPORARY_REDIRECT, headers={"Location": "/login"})
     try:
         res = supabase.auth.get_user(token)
-        if not res or not res.user: raise HTTPException(status_code=status.HTTP_307_TEMPORARY_REDIRECT, headers={"Location": "/login"})
+        if not res or not res.user: 
+            raise HTTPException(status_code=status.HTTP_307_TEMPORARY_REDIRECT, headers={"Location": "/login"})
+        
+        user_email = (res.user.email or "").strip().lower()
+        request.state.user = res.user
+        request.state.user_email = user_email
+        request.state.user_name = user_email.split("@")[0] if user_email else "Usuario"
+        request.state.user_role = "Lector"
+
+        # 1. Consultar nombre y rol en la tabla usuarios_plataforma
+        perfil_encontrado = False
+        try:
+            r_perfil = supabase.table("usuarios_plataforma").select("nombre, rol").ilike("email", user_email).execute()
+            if r_perfil.data and len(r_perfil.data) > 0:
+                request.state.user_name = r_perfil.data[0].get("nombre") or request.state.user_name
+                request.state.user_role = r_perfil.data[0].get("rol") or "Lector"
+                perfil_encontrado = True
+        except Exception as pe:
+            print(f"⚠️ Error al obtener rol del usuario en Supabase: {pe}")
+
+        # 2. Respaldo para la cuenta maestra de administración
+        if not perfil_encontrado and user_email == "admin2025@apexamerica.com":
+            request.state.user_name = "Juan Guillermo Velasco"
+            request.state.user_role = "System Administrator"
+
         return res.user
-    except Exception: raise HTTPException(status_code=status.HTTP_307_TEMPORARY_REDIRECT, headers={"Location": "/login"})
+    except HTTPException:
+        raise
+    except Exception: 
+        raise HTTPException(status_code=status.HTTP_307_TEMPORARY_REDIRECT, headers={"Location": "/login"})
 
 rutas_protegidas = APIRouter(dependencies=[Depends(verificar_sesion)])
 
@@ -913,10 +941,14 @@ async def agent_analytics(request: Request, cedula: str = None):
     return templates.TemplateResponse(request=request, name="agent_analytics.html", context=contexto_aa)
 
 # =========================================================================
-# 13. RUTA: 🛡️ SYSTEM ADMINISTRATOR (GESTIÓN DE USUARIOS REAL)
+# 13. RUTA: 🛡️ SYSTEM ADMINISTRATOR (GESTIÓN DE USUARIOS REAL - RBAC ESTRICTO)
 # =========================================================================
 @rutas_protegidas.get("/admin/usuarios", response_class=HTMLResponse)
 async def gestion_usuarios(request: Request, msg: str = None):
+    # Control de acceso RBAC: Restringido exclusivamente a System Administrator
+    if getattr(request.state, "user_role", None) != "System Administrator":
+        return RedirectResponse(url="/?error=acceso_denegado", status_code=status.HTTP_302_FOUND)
+
     try:
         resp = supabase.table("usuarios_plataforma").select("*").order("id").execute()
         usuarios_activos = resp.data if resp.data else []
@@ -935,6 +967,10 @@ async def gestion_usuarios(request: Request, msg: str = None):
 
 @rutas_protegidas.post("/admin/usuarios/crear")
 async def crear_usuario(request: Request, nombre: str = Form(...), email: str = Form(...), password: str = Form(...), rol: str = Form(...)):
+    # Control de acceso RBAC: Restringido exclusivamente a System Administrator
+    if getattr(request.state, "user_role", None) != "System Administrator":
+        return RedirectResponse(url="/?error=acceso_denegado", status_code=status.HTTP_302_FOUND)
+
     try:
         supabase_admin.auth.admin.create_user({
             "email": email,
@@ -959,6 +995,10 @@ async def crear_usuario(request: Request, nombre: str = Form(...), email: str = 
 
 @rutas_protegidas.get("/admin/usuarios/eliminar/{user_id}")
 async def eliminar_usuario(request: Request, user_id: int):
+    # Control de acceso RBAC: Restringido exclusivamente a System Administrator
+    if getattr(request.state, "user_role", None) != "System Administrator":
+        return RedirectResponse(url="/?error=acceso_denegado", status_code=status.HTTP_302_FOUND)
+
     try:
         resp_usuario = supabase.table("usuarios_plataforma").select("email").eq("id", user_id).execute()
         

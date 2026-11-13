@@ -233,20 +233,22 @@
         <header class="topbar">
             <div class="topbar-title">{{ titulo | upper }}</div>
             
-            <!-- MENÚ DESPLEGABLE DE USUARIO (SUPERIOR DERECHA) -->
+            <!-- MENÚ DESPLEGABLE DE USUARIO (SUPERIOR DERECHA - RBAC DINÁMICO) -->
             <div class="user-dropdown-container">
                 <div class="user-profile" onclick="toggleUserDropdown(event)">
-                    <span>Usuario</span>
-                    <div class="avatar">A</div>
+                    <span>{{ request.state.user_name if request.state.user_name else 'Usuario' }}</span>
+                    <div class="avatar">{{ (request.state.user_name[0] if request.state.user_name else 'U') | upper }}</div>
                     <span style="font-size: 10px; color: #64748b; margin-left: 4px;">▼</span>
                 </div>
                 
                 <div class="dropdown-menu-custom" id="userDropdown">
-                    <div class="dropdown-header">Panel de Administrador</div>
+                    <div class="dropdown-header">{{ request.state.user_role if request.state.user_role else 'Usuario' }}</div>
+                    {% if request.state.user_role == 'System Administrator' %}
                     <a href="/admin/usuarios" class="dropdown-item">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
                         Gestión de Usuarios
                     </a>
+                    {% endif %}
                     <a href="/logout" class="dropdown-item logout">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
                         Cerrar Sesión
@@ -255,6 +257,17 @@
             </div>
 
         </header>
+
+        <!-- BANNER DE ACCESO DENEGADO (SEGURIDAD RBAC) -->
+        {% if request.query_params.get('error') == 'acceso_denegado' %}
+        <div style="background: rgba(254, 226, 226, 0.95); border-left: 4px solid #ef4444; padding: 12px 18px; border-radius: 8px; margin: 15px 25px 0 25px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15); backdrop-filter: blur(8px);">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                <span style="color: #991b1b; font-weight: 700; font-size: 13px;">Acceso restringido: Se requieren privilegios de System Administrator para acceder al módulo de Gestión de Usuarios.</span>
+            </div>
+            <span onclick="this.parentElement.style.display='none'" style="cursor: pointer; color: #991b1b; font-weight: bold; font-size: 16px;">&times;</span>
+        </div>
+        {% endif %}
         <div class="container">
             {% block content %}
             {% endblock %}
