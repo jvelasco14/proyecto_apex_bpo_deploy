@@ -944,7 +944,7 @@ async def agent_analytics(request: Request, cedula: str = None):
 # 13. RUTA: 🛡️ SYSTEM ADMINISTRATOR (GESTIÓN DE USUARIOS REAL - RBAC ESTRICTO)
 # =========================================================================
 @rutas_protegidas.get("/admin/usuarios", response_class=HTMLResponse)
-async def gestion_usuarios(request: Request, msg: str = None, q_agente: str = None):
+async def gestion_usuarios(request: Request, msg: str = None):
     # Control de acceso RBAC: Restringido exclusivamente a System Administrator
     if getattr(request.state, "user_role", None) != "System Administrator":
         return RedirectResponse(url="/?error=acceso_denegado", status_code=status.HTTP_302_FOUND)
@@ -955,31 +955,12 @@ async def gestion_usuarios(request: Request, msg: str = None, q_agente: str = No
     except Exception as e:
         print(f"❌ Error cargando usuarios: {e}")
         usuarios_activos = []
-
-    # Carga de asesores de dim_agentes (recientes o con filtro de búsqueda)
-    agentes_lista = []
-    try:
-        query = supabase.table("dim_agentes").select(
-            'id, asesor, cedula, legajo, campaña, rol, estado, supervisor, five9, cari_ai, wave, ubicacion_actual, segmento, fecha_inicio'
-        )
-        if q_agente and q_agente.strip():
-            filtro = q_agente.strip()
-            query = query.or_(f"asesor.ilike.%{filtro}%,cedula.ilike.%{filtro}%,legajo.ilike.%{filtro}%")
-            resp_ag = query.order("id", desc=True).limit(50).execute()
-        else:
-            resp_ag = query.order("id", desc=True).limit(20).execute()
-        agentes_lista = resp_ag.data if resp_ag.data else []
-    except Exception as e:
-        print(f"❌ Error cargando dim_agentes: {e}")
-        agentes_lista = []
     
     contexto_admin = {
         "request": request,
         "titulo": "Gestión de Usuarios",
         "menu_activo": "admin_usuarios",
         "usuarios": usuarios_activos,
-        "agentes": agentes_lista,
-        "q_agente": q_agente or "",
         "msg": msg
     }
     return templates.TemplateResponse(request=request, name="gestion_usuarios.html", context=contexto_admin)
@@ -1044,6 +1025,39 @@ async def eliminar_usuario(request: Request, user_id: int):
 # =========================================================================
 # 14. RUTAS: 👥 MAESTRO OPERATIVO DE ASESORES (dim_agentes)
 # =========================================================================
+@rutas_protegidas.get("/admin/agentes", response_class=HTMLResponse)
+async def gestion_agentes(request: Request, msg: str = None, q_agente: str = None):
+    # Control de acceso RBAC: Restringido a System Administrator
+    if getattr(request.state, "user_role", None) != "System Administrator":
+        return RedirectResponse(url="/?error=acceso_denegado", status_code=status.HTTP_302_FOUND)
+
+    # Carga de asesores de dim_agentes (recientes o con filtro de búsqueda)
+    agentes_lista = []
+    try:
+        query = supabase.table("dim_agentes").select(
+            'id, asesor, cedula, legajo, campaña, rol, estado, supervisor, five9, cari_ai, wave, ubicacion_actual, segmento, fecha_inicio'
+        )
+        if q_agente and q_agente.strip():
+            filtro = q_agente.strip()
+            query = query.or_(f"asesor.ilike.%{filtro}%,cedula.ilike.%{filtro}%,legajo.ilike.%{filtro}%")
+            resp_ag = query.order("id", desc=True).limit(50).execute()
+        else:
+            resp_ag = query.order("id", desc=True).limit(25).execute()
+        agentes_lista = resp_ag.data if resp_ag.data else []
+    except Exception as e:
+        print(f"❌ Error cargando dim_agentes: {e}")
+        agentes_lista = []
+    
+    contexto_agentes = {
+        "request": request,
+        "titulo": "Gestión de Agentes",
+        "menu_activo": "admin_agentes",
+        "agentes": agentes_lista,
+        "q_agente": q_agente or "",
+        "msg": msg
+    }
+    return templates.TemplateResponse(request=request, name="gestion_agentes.html", context=contexto_agentes)
+
 @rutas_protegidas.post("/admin/agentes/crear")
 async def crear_agente(
     request: Request,
@@ -1116,11 +1130,11 @@ async def crear_agente(
         }
 
         supabase.table("dim_agentes").insert(nuevo_agente).execute()
-        return RedirectResponse(url="/admin/usuarios?msg=agente_creado#modulo-agentes", status_code=status.HTTP_302_FOUND)
+        return RedirectResponse(url="/admin/agentes?msg=agente_creado", status_code=status.HTTP_302_FOUND)
         
     except Exception as e:
         print(f"❌ Error al crear asesor en dim_agentes: {e}")
-        return RedirectResponse(url="/admin/usuarios?msg=error_agente#modulo-agentes", status_code=status.HTTP_302_FOUND)
+        return RedirectResponse(url="/admin/agentes?msg=error_agente", status_code=status.HTTP_302_FOUND)
 
 @rutas_protegidas.get("/admin/agentes/eliminar/{agente_id}")
 async def eliminar_agente(request: Request, agente_id: int):
@@ -1130,10 +1144,10 @@ async def eliminar_agente(request: Request, agente_id: int):
 
     try:
         supabase.table("dim_agentes").delete().eq("id", agente_id).execute()
-        return RedirectResponse(url="/admin/usuarios?msg=agente_eliminado#modulo-agentes", status_code=status.HTTP_302_FOUND)
+        return RedirectResponse(url="/admin/agentes?msg=agente_eliminado", status_code=status.HTTP_302_FOUND)
     except Exception as e:
         print(f"❌ Error al eliminar asesor en dim_agentes: {e}")
-        return RedirectResponse(url="/admin/usuarios?msg=error_agente#modulo-agentes", status_code=status.HTTP_302_FOUND)
+        return RedirectResponse(url="/admin/agentes?msg=error_agente", status_code=status.HTTP_302_FOUND)
 
 # ==========================================
 # 🔌 CONEXIÓN DEL ROUTER VIP A LA APP (DEBE IR AL FINAL DE TODO)

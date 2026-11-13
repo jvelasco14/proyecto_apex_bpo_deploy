@@ -1,0 +1,341 @@
+{% extends "base.html" %}
+
+{% block title %}Gestión de Agentes | GTR Analytics{% endblock %}
+
+{% block extra_css %}
+<style>
+    .glass-card {
+        background: rgba(255, 255, 255, 0.65);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.8);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+        border-radius: 8px;
+    }
+    .table-hover-row:hover {
+        background: rgba(248, 250, 252, 1) !important;
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ENCABEZADO DE LA SECCIÓN DIM_AGENTES -->
+<div style="background: rgba(255, 255, 255, 0.45); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.7); border-radius: 12px; padding: 28px 30px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; margin-bottom: 24px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);">
+    <div style="display: flex; gap: 10px; justify-self: start; align-self: start;">
+        <span style="background: rgba(13, 148, 136, 0.15); color: #0f766e; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 800; border: 1px solid rgba(13, 148, 136, 0.3); display: flex; align-items: center; gap: 6px;">
+            GTR WORKFORCE MANAGEMENT
+        </span>
+    </div>
+    <div style="text-align: center;">
+        <h1 style="color: #0f172a; font-size: 24px; font-weight: 900; margin: 0 0 6px 0; letter-spacing: -0.5px;">Maestro de Asesores Operativos (dim_agentes)</h1>
+        <p style="color: #475569; font-size: 13px; margin: 0;">Administración, alta y homologación de agentes para campañas Claro BPO y plataformas de telefonía (Five9, CARI AI).</p>
+    </div>
+    <div></div>
+</div>
+
+<!-- MENSAJES DE CONFIRMACIÓN -->
+{% if msg == 'agente_creado' %}
+<div style="background: rgba(220, 252, 231, 0.9); border-left: 4px solid #0d9488; padding: 16px; border-radius: 8px; margin-bottom: 24px; display: flex; align-items: center; gap: 10px; backdrop-filter: blur(8px);">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0d9488" stroke-width="2.5"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><polyline points="16 11 18 13 22 9"></polyline></svg>
+    <span style="color: #0f766e; font-weight: 700; font-size: 13px;">Asesor operativo registrado y vinculado con éxito en la tabla dim_agentes.</span>
+</div>
+{% elif msg == 'agente_eliminado' %}
+<div style="background: rgba(254, 226, 226, 0.9); border-left: 4px solid #dc2626; padding: 16px; border-radius: 8px; margin-bottom: 24px; display: flex; align-items: center; gap: 10px; backdrop-filter: blur(8px);">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+    <span style="color: #991b1b; font-weight: 700; font-size: 13px;">Registro del asesor desvinculado y eliminado de dim_agentes.</span>
+</div>
+{% elif msg == 'error_agente' %}
+<div style="background: rgba(254, 226, 226, 0.9); border-left: 4px solid #dc2626; padding: 16px; border-radius: 8px; margin-bottom: 24px; display: flex; align-items: center; gap: 10px; backdrop-filter: blur(8px);">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+    <span style="color: #991b1b; font-weight: 700; font-size: 13px;">Ocurrió un error al procesar el asesor en dim_agentes. Verifica que la cédula y datos numéricos sean válidos.</span>
+</div>
+{% endif %}
+
+<!-- TARJETA DEL FORMULARIO DE ALTA DE AGENTE -->
+<div class="glass-card" style="padding: 28px; margin-bottom: 28px; border-top: 4px solid #0d9488;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(0,0,0,0.06); padding-bottom: 12px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0d9488" stroke-width="2.5"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+            <h3 style="font-size: 13px; font-weight: 900; color: #1e293b; margin: 0; text-transform: uppercase; letter-spacing: 0.5px;">Formulario de Registro de Nuevo Asesor</h3>
+        </div>
+        <span style="font-size: 11px; color: #64748b; font-weight: 600;">Campos marcados con (*) son obligatorios</span>
+    </div>
+
+    <form action="/admin/agentes/crear" method="POST">
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 24px;">
+            
+            <!-- BLOQUE 1: IDENTIFICACIÓN OPERATIVA -->
+            <div style="background: rgba(248, 250, 252, 0.6); padding: 18px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                <div style="font-size: 11px; font-weight: 900; color: #0f766e; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #cbd5e1; padding-bottom: 6px;">
+                    1. Identificación y Campaña
+                </div>
+
+                <div style="margin-bottom: 12px;">
+                    <label style="display: block; font-size: 10px; font-weight: 800; color: #475569; margin-bottom: 4px;">NOMBRE COMPLETO ASESOR *</label>
+                    <input type="text" name="asesor" required placeholder="Ej. Cristian Camilo Lizarazo" style="width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px; font-family: 'Inter', sans-serif; background: #ffffff; outline: none;">
+                </div>
+
+                <div style="margin-bottom: 12px;">
+                    <label style="display: block; font-size: 10px; font-weight: 800; color: #475569; margin-bottom: 4px;">CÉDULA DE CIUDADANÍA *</label>
+                    <input type="text" name="cedula" required placeholder="Ej. 1034398890" style="width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px; font-family: 'Inter', sans-serif; background: #ffffff; outline: none;">
+                </div>
+
+                <div style="margin-bottom: 12px;">
+                    <label style="display: block; font-size: 10px; font-weight: 800; color: #475569; margin-bottom: 4px;">LEGAJO / CÓDIGO EMPLEADO</label>
+                    <input type="text" name="legajo" placeholder="Ej. 916663" style="width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px; font-family: 'Inter', sans-serif; background: #ffffff; outline: none;">
+                </div>
+
+                <div style="margin-bottom: 12px;">
+                    <label style="display: block; font-size: 10px; font-weight: 800; color: #475569; margin-bottom: 4px;">CAMPAÑA ASIGNADA</label>
+                    <select name="campaña" style="width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px; font-weight: 600; color: #334155; font-family: 'Inter', sans-serif; background: #ffffff; outline: none;">
+                        <option value="WOM COLOMBIA">WOM COLOMBIA</option>
+                        <option value="Migraciones Inbound">Migraciones Inbound</option>
+                        <option value="Retenciones Outbound">Retenciones Outbound</option>
+                        <option value="Redes Sociales">Redes Sociales</option>
+                    </select>
+                </div>
+
+                <div style="margin-bottom: 12px;">
+                    <label style="display: block; font-size: 10px; font-weight: 800; color: #475569; margin-bottom: 4px;">SUPERVISOR DIRECTO</label>
+                    <input type="text" name="supervisor" placeholder="Ej. Jonathan Andrés Daza" style="width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px; font-family: 'Inter', sans-serif; background: #ffffff; outline: none;">
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+                    <div>
+                        <label style="display: block; font-size: 10px; font-weight: 800; color: #475569; margin-bottom: 4px;">ROL</label>
+                        <select name="rol" style="width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px; font-weight: 600; color: #334155; font-family: 'Inter', sans-serif; background: #ffffff; outline: none;">
+                            <option value="Agente">Agente</option>
+                            <option value="BackOffice">BackOffice</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 10px; font-weight: 800; color: #475569; margin-bottom: 4px;">ESTADO</label>
+                        <select name="estado" style="width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px; font-weight: 600; color: #334155; font-family: 'Inter', sans-serif; background: #ffffff; outline: none;">
+                            <option value="ACTIVO">ACTIVO</option>
+                            <option value="BAJA">BAJA</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label style="display: block; font-size: 10px; font-weight: 800; color: #475569; margin-bottom: 4px;">MODALIDAD</label>
+                    <select name="ubicacion_actual" style="width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px; font-weight: 600; color: #334155; font-family: 'Inter', sans-serif; background: #ffffff; outline: none;">
+                        <option value="Site">Site (Presencial)</option>
+                        <option value="Home">Home (Teletrabajo)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- BLOQUE 2: PLATAFORMAS Y TELEMETRÍA -->
+            <div style="background: rgba(248, 250, 252, 0.6); padding: 18px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                <div style="font-size: 11px; font-weight: 900; color: #0f766e; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #cbd5e1; padding-bottom: 6px;">
+                    2. Plataformas y Telefonía
+                </div>
+
+                <div style="margin-bottom: 12px;">
+                    <label style="display: block; font-size: 10px; font-weight: 800; color: #475569; margin-bottom: 4px;">FIVE9 AGENT ID (TELEFONÍA)</label>
+                    <input type="number" step="any" name="five9" placeholder="Ej. 1034398890" style="width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px; font-family: 'Inter', sans-serif; background: #ffffff; outline: none;">
+                </div>
+
+                <div style="margin-bottom: 12px;">
+                    <label style="display: block; font-size: 10px; font-weight: 800; color: #475569; margin-bottom: 4px;">USUARIO CARI AI (CHATS)</label>
+                    <input type="text" name="cari_ai" placeholder="Ej. lina.ochoam" style="width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px; font-family: 'Inter', sans-serif; background: #ffffff; outline: none;">
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+                    <div>
+                        <label style="display: block; font-size: 10px; font-weight: 800; color: #475569; margin-bottom: 4px;">USUARIO EKIA</label>
+                        <input type="text" name="ekia" placeholder="Ej. brayan.pinzon" style="width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px; font-family: 'Inter', sans-serif; background: #ffffff; outline: none;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 10px; font-weight: 800; color: #475569; margin-bottom: 4px;">USUARIO GECKO</label>
+                        <input type="text" name="gecko" placeholder="Ej. richard.perazao" style="width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px; font-family: 'Inter', sans-serif; background: #ffffff; outline: none;">
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 12px;">
+                    <label style="display: block; font-size: 10px; font-weight: 800; color: #475569; margin-bottom: 4px;">USUARIO WINDOWS / RED</label>
+                    <input type="text" name="usuario_windows" placeholder="Ej. santosjm" style="width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px; font-family: 'Inter', sans-serif; background: #ffffff; outline: none;">
+                </div>
+
+                <div style="margin-bottom: 12px;">
+                    <label style="display: block; font-size: 10px; font-weight: 800; color: #475569; margin-bottom: 4px;">CORREO CORPORATIVO / CONTACTO</label>
+                    <input type="email" name="correo" placeholder="asesor@apexamerica.com" style="width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px; font-family: 'Inter', sans-serif; background: #ffffff; outline: none;">
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+                    <div>
+                        <label style="display: block; font-size: 10px; font-weight: 800; color: #475569; margin-bottom: 4px;">COHORTE / WAVE</label>
+                        <input type="text" name="wave" placeholder="Ej. Wave 82" style="width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px; font-family: 'Inter', sans-serif; background: #ffffff; outline: none;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 10px; font-weight: 800; color: #475569; margin-bottom: 4px;">FECHA INICIO</label>
+                        <input type="date" name="fecha_inicio" style="width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px; font-family: 'Inter', sans-serif; background: #ffffff; outline: none;">
+                    </div>
+                </div>
+
+                <div>
+                    <label style="display: block; font-size: 10px; font-weight: 800; color: #475569; margin-bottom: 4px;">PROGRAMACIÓN</label>
+                    <input type="text" name="programacion" value="Activo con programación" style="width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px; font-family: 'Inter', sans-serif; background: #ffffff; outline: none;">
+                </div>
+            </div>
+
+            <!-- BLOQUE 3: SEGMENTO Y DATOS LOGÍSTICOS -->
+            <div style="background: rgba(248, 250, 252, 0.6); padding: 18px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                <div style="font-size: 11px; font-weight: 900; color: #0f766e; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #cbd5e1; padding-bottom: 6px;">
+                    3. Perfil y Logística
+                </div>
+
+                <div style="margin-bottom: 12px;">
+                    <label style="display: block; font-size: 10px; font-weight: 800; color: #475569; margin-bottom: 4px;">SEGMENTO / COLA</label>
+                    <input type="text" name="segmento" placeholder="Ej. Retencion Inbound / Portabilidad" style="width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px; font-family: 'Inter', sans-serif; background: #ffffff; outline: none;">
+                </div>
+
+                <div style="margin-bottom: 12px;">
+                    <label style="display: block; font-size: 10px; font-weight: 800; color: #475569; margin-bottom: 4px;">SKILL ESPECIALIZADO</label>
+                    <input type="text" name="skill_especializado" placeholder="Ej. Retencion Inbound" style="width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px; font-family: 'Inter', sans-serif; background: #ffffff; outline: none;">
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 8px; margin-bottom: 12px;">
+                    <div>
+                        <label style="display: block; font-size: 10px; font-weight: 800; color: #475569; margin-bottom: 4px;">GÉNERO</label>
+                        <select name="observacion" style="width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px; font-weight: 600; color: #334155; font-family: 'Inter', sans-serif; background: #ffffff; outline: none;">
+                            <option value="M">M (Masculino)</option>
+                            <option value="F">F (Femenino)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 10px; font-weight: 800; color: #475569; margin-bottom: 4px;">CELULAR</label>
+                        <input type="text" name="celular" placeholder="Ej. 3168185618" style="width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px; font-family: 'Inter', sans-serif; background: #ffffff; outline: none;">
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 12px;">
+                    <label style="display: block; font-size: 10px; font-weight: 800; color: #475569; margin-bottom: 4px;">TELÉFONO EN CASO DE EMERGENCIA</label>
+                    <input type="text" name="en_caso_de_emergencia" placeholder="Ej. 3112122590" style="width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px; font-family: 'Inter', sans-serif; background: #ffffff; outline: none;">
+                </div>
+
+                <div style="margin-bottom: 12px;">
+                    <label style="display: block; font-size: 10px; font-weight: 800; color: #475569; margin-bottom: 4px;">DIRECCIÓN DE RESIDENCIA</label>
+                    <input type="text" name="direccion" placeholder="Ej. Trv 74 A # 43 - 61 Sur" style="width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px; font-family: 'Inter', sans-serif; background: #ffffff; outline: none;">
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <div>
+                        <label style="display: block; font-size: 10px; font-weight: 800; color: #475569; margin-bottom: 4px;">BARRIO</label>
+                        <input type="text" name="barrio" placeholder="Ej. Timiza" style="width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px; font-family: 'Inter', sans-serif; background: #ffffff; outline: none;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 10px; font-weight: 800; color: #475569; margin-bottom: 4px;">LOCALIDAD</label>
+                        <input type="text" name="localidad" placeholder="Ej. Kennedy" style="width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px; font-family: 'Inter', sans-serif; background: #ffffff; outline: none;">
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- BOTÓN DE ENVÍO -->
+        <div style="display: flex; justify-content: flex-end;">
+            <button type="submit" style="background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%); color: white; border: none; padding: 12px 28px; border-radius: 8px; font-size: 13px; font-weight: 800; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(13, 148, 136, 0.25); display: flex; align-items: center; gap: 8px;" onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 6px 16px rgba(13, 148, 136, 0.35)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(13, 148, 136, 0.25)'">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                Vincular Asesor a dim_agentes
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- DIRECTORIO DE ASESORES RECIENTES EN DIM_AGENTES -->
+<div class="glass-card" style="overflow: hidden;">
+    <div style="background: rgba(248, 250, 252, 0.85); padding: 16px 24px; border-bottom: 1px solid rgba(0,0,0,0.06); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <h3 style="font-size: 12px; font-weight: 900; color: #1e293b; margin: 0; text-transform: uppercase; letter-spacing: 0.5px;">Directorio Operativo de Asesores (dim_agentes)</h3>
+            <span style="font-size: 11px; font-weight: 700; color: #64748b; background: rgba(100, 116, 139, 0.1); padding: 2px 8px; border-radius: 12px;">{{ agentes|length }} Visualizados</span>
+        </div>
+
+        <!-- BUSCADOR RÁPIDO DE ASESORES -->
+        <form action="/admin/agentes" method="GET" style="display: flex; gap: 8px; align-items: center;">
+            <input type="text" name="q_agente" value="{{ q_agente }}" placeholder="Buscar asesor, cédula o legajo..." style="padding: 7px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px; font-family: 'Inter', sans-serif; background: #ffffff; width: 260px; outline: none;">
+            <button type="submit" style="background: #0f766e; color: white; border: none; padding: 7px 14px; border-radius: 6px; font-size: 11px; font-weight: 800; cursor: pointer; transition: 0.2s;">
+                Buscar
+            </button>
+            {% if q_agente %}
+            <a href="/admin/agentes" style="color: #64748b; font-size: 11px; font-weight: 700; text-decoration: none; padding: 6px 10px; border-radius: 6px; background: #e2e8f0;">
+                Limpiar
+            </a>
+            {% endif %}
+        </form>
+    </div>
+
+    <div style="overflow-x: auto; max-height: 480px; background: rgba(255, 255, 255, 0.5);">
+        <table style="width: 100%; font-size: 12px; border-collapse: collapse; text-align: left;">
+            <thead style="position: sticky; top: 0; background: #f8fafc; z-index: 5; box-shadow: 0 2px 2px -1px rgba(0,0,0,0.1);">
+                <tr style="color: #64748b; border-bottom: 2px solid #cbd5e1;">
+                    <th style="padding: 12px 18px; font-weight: 900; font-size: 10px; text-transform: uppercase;">ID</th>
+                    <th style="padding: 12px 18px; font-weight: 900; font-size: 10px; text-transform: uppercase;">Asesor / Cédula</th>
+                    <th style="padding: 12px 18px; font-weight: 900; font-size: 10px; text-transform: uppercase;">Campaña & Wave</th>
+                    <th style="padding: 12px 18px; font-weight: 900; font-size: 10px; text-transform: uppercase;">Rol & Modalidad</th>
+                    <th style="padding: 12px 18px; font-weight: 900; font-size: 10px; text-transform: uppercase;">Supervisor Directo</th>
+                    <th style="padding: 12px 18px; font-weight: 900; font-size: 10px; text-transform: uppercase;">Telefonía / Chat</th>
+                    <th style="padding: 12px 18px; font-weight: 900; font-size: 10px; text-transform: uppercase;">Estado</th>
+                    <th style="padding: 12px 18px; font-weight: 900; font-size: 10px; text-transform: uppercase; text-align: center;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in agentes %}
+                <tr class="table-hover-row" style="border-bottom: 1px solid #e2e8f0; background: #ffffff; transition: background 0.2s;">
+                    <td style="padding: 12px 18px; font-weight: 800; color: #94a3b8; font-size: 11px;">#{{ a.id }}</td>
+                    <td style="padding: 12px 18px;">
+                        <div style="font-weight: 800; color: #0f172a;">{{ a.asesor }}</div>
+                        <div style="font-size: 11px; color: #64748b; font-weight: 500;">C.C. {{ a.cedula }} {% if a.legajo %}| Legajo: {{ a.legajo }}{% endif %}</div>
+                    </td>
+                    <td style="padding: 12px 18px;">
+                        <div style="font-weight: 700; color: #334155;">{{ a.campaña or 'Sin Asignar' }}</div>
+                        <div style="font-size: 10px; color: #64748b;">{{ a.wave or '-' }}</div>
+                    </td>
+                    <td style="padding: 12px 18px;">
+                        <span style="font-weight: 700; color: #475569;">{{ a.rol or 'Agente' }}</span>
+                        <span style="font-size: 10px; color: #64748b; display: block;">{{ a.ubicacion_actual or 'Site' }}</span>
+                    </td>
+                    <td style="padding: 12px 18px; font-weight: 600; color: #475569;">
+                        {{ a.supervisor or 'No asignado' }}
+                    </td>
+                    <td style="padding: 12px 18px; font-size: 11px;">
+                        {% if a.five9 %}
+                        <div style="color: #0f766e; font-weight: 700;">Five9: {{ a.five9 | int }}</div>
+                        {% endif %}
+                        {% if a.cari_ai %}
+                        <div style="color: #6b21a8; font-weight: 600;">Cari: {{ a.cari_ai }}</div>
+                        {% endif %}
+                        {% if not a.five9 and not a.cari_ai %}
+                        <span style="color: #cbd5e1;">-</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 12px 18px;">
+                        <span style="background: {% if a.estado == 'ACTIVO' %}#dcfce7; color: #16a34a{% else %}#fee2e2; color: #dc2626{% endif %}; padding: 3px 8px; border-radius: 4px; font-weight: 800; font-size: 10px;">
+                            {{ a.estado }}
+                        </span>
+                    </td>
+                    <td style="padding: 12px 18px; text-align: center;">
+                        <a href="/admin/agentes/eliminar/{{ a.id }}" onclick="return confirm('¿Estás seguro de desvincular al asesor {{ a.asesor }} (C.C. {{ a.cedula }}) de la tabla dim_agentes?');" style="color: #ef4444; background: #fee2e2; padding: 5px 10px; border-radius: 6px; text-decoration: none; font-size: 10px; font-weight: 800; display: inline-block; transition: 0.2s;" onmouseover="this.style.background='#fecaca'" onmouseout="this.style.background='#fee2e2'">
+                            Eliminar
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" style="padding: 24px; text-align: center; color: #94a3b8; font-weight: 600;">
+                        No se encontraron asesores registrados con los criterios especificados.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}
