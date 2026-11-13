@@ -944,7 +944,7 @@ async def agent_analytics(request: Request, cedula: str = None):
 # 13. RUTA: 🛡️ SYSTEM ADMINISTRATOR (GESTIÓN DE USUARIOS REAL - RBAC ESTRICTO)
 # =========================================================================
 @rutas_protegidas.get("/admin/usuarios", response_class=HTMLResponse)
-async def gestion_usuarios(request: Request, msg: str = None):
+async def gestion_usuarios(request: Request, msg: str = None, q_agente: str = None):
     # Control de acceso RBAC: Restringido exclusivamente a System Administrator
     if getattr(request.state, "user_role", None) != "System Administrator":
         return RedirectResponse(url="/?error=acceso_denegado", status_code=status.HTTP_302_FOUND)
@@ -955,12 +955,31 @@ async def gestion_usuarios(request: Request, msg: str = None):
     except Exception as e:
         print(f"❌ Error cargando usuarios: {e}")
         usuarios_activos = []
+
+    # Carga de asesores de dim_agentes (recientes o con filtro de búsqueda)
+    agentes_lista = []
+    try:
+        query = supabase.table("dim_agentes").select(
+            'id, asesor, cedula, legajo, campaña, rol, estado, supervisor, five9, cari_ai, wave, ubicacion_actual, segmento, fecha_inicio'
+        )
+        if q_agente and q_agente.strip():
+            filtro = q_agente.strip()
+            query = query.or_(f"asesor.ilike.%{filtro}%,cedula.ilike.%{filtro}%,legajo.ilike.%{filtro}%")
+            resp_ag = query.order("id", desc=True).limit(50).execute()
+        else:
+            resp_ag = query.order("id", desc=True).limit(20).execute()
+        agentes_lista = resp_ag.data if resp_ag.data else []
+    except Exception as e:
+        print(f"❌ Error cargando dim_agentes: {e}")
+        agentes_lista = []
     
     contexto_admin = {
         "request": request,
         "titulo": "Gestión de Usuarios",
         "menu_activo": "admin_usuarios",
         "usuarios": usuarios_activos,
+        "agentes": agentes_lista,
+        "q_agente": q_agente or "",
         "msg": msg
     }
     return templates.TemplateResponse(request=request, name="gestion_usuarios.html", context=contexto_admin)
@@ -1021,6 +1040,100 @@ async def eliminar_usuario(request: Request, user_id: int):
     except Exception as e:
         print(f"❌ Error eliminando usuario en ambas capas: {e}")
         return RedirectResponse(url="/admin/usuarios?msg=error", status_code=status.HTTP_302_FOUND)
+
+# =========================================================================
+# 14. RUTAS: 👥 MAESTRO OPERATIVO DE ASESORES (dim_agentes)
+# =========================================================================
+@rutas_protegidas.post("/admin/agentes/crear")
+async def crear_agente(
+    request: Request,
+    asesor: str = Form(...),
+    cedula: str = Form(...),
+    campaña: str = Form("WOM COLOMBIA"),
+    legajo: str = Form(None),
+    supervisor: str = Form(None),
+    rol: str = Form("Agente"),
+    estado: str = Form("ACTIVO"),
+    ubicacion_actual: str = Form("Site"),
+    wave: str = Form(None),
+    fecha_inicio: str = Form(None),
+    segmento: str = Form(None),
+    skill_especializado: str = Form(None),
+    observacion: str = Form(None),
+    five9: str = Form(None),
+    cari_ai: str = Form(None),
+    usuario_windows: str = Form(None),
+    correo: str = Form(None),
+    ekia: str = Form(None),
+    gecko: str = Form(None),
+    celular: str = Form(None),
+    en_caso_de_emergencia: str = Form(None),
+    direccion: str = Form(None),
+    barrio: str = Form(None),
+    localidad: str = Form(None),
+    programacion: str = Form("Activo con programación")
+):
+    # Control de acceso RBAC: Restringido a System Administrator
+    if getattr(request.state, "user_role", None) != "System Administrator":
+        return RedirectResponse(url="/?error=acceso_denegado", status_code=status.HTTP_302_FOUND)
+
+    try:
+        five9_val = None
+        if five9 and five9.strip():
+            try:
+                five9_val = float(five9.strip())
+            except ValueError:
+                five9_val = None
+
+        nuevo_agente = {
+            "asesor": asesor.strip(),
+            "cedula": cedula.strip(),
+            "campaña": campaña.strip() if campaña and campaña.strip() else "WOM COLOMBIA",
+            "legajo": legajo.strip() if legajo and legajo.strip() else None,
+            "supervisor": supervisor.strip() if supervisor and supervisor.strip() else None,
+            "rol": rol.strip() if rol and rol.strip() else "Agente",
+            "estado": estado.strip() if estado and estado.strip() else "ACTIVO",
+            "ubicacion_actual": ubicacion_actual.strip() if ubicacion_actual and ubicacion_actual.strip() else "Site",
+            "wave": wave.strip() if wave and wave.strip() else None,
+            "fecha_inicio": (fecha_inicio.strip() + " 00:00:00") if fecha_inicio and fecha_inicio.strip() else None,
+            "segmento": segmento.strip() if segmento and segmento.strip() else None,
+            "skill_especializado": skill_especializado.strip() if skill_especializado and skill_especializado.strip() else (segmento.strip() if segmento and segmento.strip() else None),
+            "observación": observacion.strip() if observacion and observacion.strip() else None,
+            "five9": five9_val,
+            "cari_ai": cari_ai.strip() if cari_ai and cari_ai.strip() else None,
+            "usuario_windows": usuario_windows.strip() if usuario_windows and usuario_windows.strip() else None,
+            "correo": correo.strip() if correo and correo.strip() else None,
+            "ekia": ekia.strip() if ekia and ekia.strip() else None,
+            "gecko": gecko.strip() if gecko and gecko.strip() else None,
+            "celular": celular.strip() if celular and celular.strip() else None,
+            "en_caso_de_emergencia": en_caso_de_emergencia.strip() if en_caso_de_emergencia and en_caso_de_emergencia.strip() else None,
+            "dirección": direccion.strip() if direccion and direccion.strip() else None,
+            "barrio": barrio.strip() if barrio and barrio.strip() else None,
+            "localidad": localidad.strip() if localidad and localidad.strip() else None,
+            "posición": "-",
+            "programación": programacion.strip() if programacion and programacion.strip() else "Activo con programación",
+            "baja_del_día": 0
+        }
+
+        supabase.table("dim_agentes").insert(nuevo_agente).execute()
+        return RedirectResponse(url="/admin/usuarios?msg=agente_creado#modulo-agentes", status_code=status.HTTP_302_FOUND)
+        
+    except Exception as e:
+        print(f"❌ Error al crear asesor en dim_agentes: {e}")
+        return RedirectResponse(url="/admin/usuarios?msg=error_agente#modulo-agentes", status_code=status.HTTP_302_FOUND)
+
+@rutas_protegidas.get("/admin/agentes/eliminar/{agente_id}")
+async def eliminar_agente(request: Request, agente_id: int):
+    # Control de acceso RBAC: Restringido a System Administrator
+    if getattr(request.state, "user_role", None) != "System Administrator":
+        return RedirectResponse(url="/?error=acceso_denegado", status_code=status.HTTP_302_FOUND)
+
+    try:
+        supabase.table("dim_agentes").delete().eq("id", agente_id).execute()
+        return RedirectResponse(url="/admin/usuarios?msg=agente_eliminado#modulo-agentes", status_code=status.HTTP_302_FOUND)
+    except Exception as e:
+        print(f"❌ Error al eliminar asesor en dim_agentes: {e}")
+        return RedirectResponse(url="/admin/usuarios?msg=error_agente#modulo-agentes", status_code=status.HTTP_302_FOUND)
 
 # ==========================================
 # 🔌 CONEXIÓN DEL ROUTER VIP A LA APP (DEBE IR AL FINAL DE TODO)
