@@ -350,21 +350,34 @@ def analizar_migraciones(engine, modo, tz_colombia):
             fecha_cierre = datetime.now(tz_colombia).strftime("%Y-%m-%d")
 
         try:
-            q_hist = f"SELECT call_id, agent, talk_time, disposition, date, time FROM hist_base_llamadas_migraciones WHERE agent IS NOT NULL AND agent != '[None]' AND date = '{fecha_cierre}'"
+            # 1. Obtenemos las llamadas para el TMO promedio
+            q_hist_llamadas = f"SELECT call_id, agent, talk_time, date, time FROM hist_base_llamadas_migraciones WHERE agent IS NOT NULL AND agent != '[None]' AND date = '{fecha_cierre}'"
             with engine.connect() as conn:
-                df_hist = pd.read_sql_query(text(q_hist), conn)
+                df_llamadas = pd.read_sql_query(text(q_hist_llamadas), conn)
             
-            # BLINDAJE: KMeans requiere un volumen estadístico mínimo
-            if df_hist.empty or len(df_hist) < 50: 
-                print(f"   ⚠️ No hay datos suficientes para perfilar agentes el {fecha_cierre}.")
-                return
+            if df_llamadas.empty or len(df_llamadas) < 50: return
 
-            df_hist['segundos_hablados'] = pd.to_timedelta(df_hist['talk_time'], errors='coerce').dt.total_seconds().fillna(0)
-            df_hist['es_venta'] = df_hist['disposition'].str.contains('Venta Facturada', case=False, na=False).astype(int)
+            df_llamadas['segundos_hablados'] = pd.to_timedelta(df_llamadas['talk_time'], errors='coerce').dt.total_seconds().fillna(0)
+            agentes_llamadas = df_llamadas.groupby('agent').agg(total_llamadas=('call_id', 'count'), tmo_promedio=('segundos_hablados', 'mean')).reset_index()
 
-            agentes_kpi = df_hist.groupby('agent').agg(total_llamadas=('call_id', 'count'), tmo_promedio=('segundos_hablados', 'mean'), total_ventas=('es_venta', 'sum')).reset_index()
+            # 2. Obtenemos las VENTAS OFICIALES como única fuente de verdad
+            try:
+                q_hist_ventas = f"SELECT cedula_del_agente as cedula_del_agent, COUNT(*) as total_ventas FROM base_ventas_migraciones WHERE fecha_de_venta = '{fecha_cierre}' GROUP BY cedula_del_agente"
+                with engine.connect() as conn:
+                    df_ventas = pd.read_sql_query(text(q_hist_ventas), conn)
+            except Exception:
+                q_hist_ventas = f"SELECT cedula_del_agent, COUNT(*) as total_ventas FROM base_ventas_migraciones WHERE fecha_de_venta = '{fecha_cierre}' GROUP BY cedula_del_agent"
+                with engine.connect() as conn:
+                    df_ventas = pd.read_sql_query(text(q_hist_ventas), conn)
+
+            # 3. Cruzamos (Merge) usando la cédula y calculamos la efectividad real
+            agentes_llamadas['agent'] = agentes_llamadas['agent'].astype(str)
+            df_ventas['cedula_del_agent'] = df_ventas['cedula_del_agent'].astype(str)
+            agentes_kpi = pd.merge(agentes_llamadas, df_ventas, left_on='agent', right_on='cedula_del_agent', how='left')
+            agentes_kpi['total_ventas'] = agentes_kpi['total_ventas'].fillna(0)
             agentes_kpi['efectividad'] = (agentes_kpi['total_ventas'] / agentes_kpi['total_llamadas']) * 100
-            agentes_filtrados = agentes_kpi[agentes_kpi['total_llamadas'] > 5].copy()
+            
+            agentes_filtrados = agentes_kpi[(agentes_kpi['total_llamadas'] > 5) & (~agentes_kpi['agent'].isin(['0', '0.0', 'None', '', 'nan']))].copy()
 
             # BLINDAJE: K-Means(3) requiere al menos 3 agentes analizables
             if len(agentes_filtrados) >= 3:

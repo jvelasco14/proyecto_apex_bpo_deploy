@@ -399,7 +399,15 @@ def analizar_rrss(engine, modo, tz_colombia):
 
             # BLINDAJE: K-Means(3) requiere 3 o más agentes
             if len(agentes_filtrados) >= 3:
-                agentes_filtrados['cluster_id'] = KMeans(n_clusters=3, random_state=42, n_init=10).fit_predict(StandardScaler().fit_transform(agentes_filtrados[['porcentaje_promotores', 'tmo_promedio']]))
+                # 1. Escalamos las variables a una medida neutral
+                scaler = StandardScaler()
+                features_scaled = scaler.fit_transform(agentes_filtrados[['porcentaje_promotores', 'tmo_promedio']])
+                
+                # 2. PONDERACIÓN DE NEGOCIO: Multiplicar el NPS (índice 0) por 3.0 para darle mayor peso
+                features_scaled[:, 0] = features_scaled[:, 0] * 3.0 
+                
+                # 3. Entrenar K-Means con los datos ponderados
+                agentes_filtrados['cluster_id'] = KMeans(n_clusters=3, random_state=42, n_init=10).fit_predict(features_scaled)
                 cluster_medias = agentes_filtrados.groupby('cluster_id')['porcentaje_promotores'].mean().sort_values()
                 nombres_clusters = {cluster_medias.index[0]: 'Riesgo de Calidad (Bajo NPS)', cluster_medias.index[1]: 'Estándar (Calidad Media)', cluster_medias.index[2]: 'Resolutivos Estrella (Alto NPS)'}
                 agentes_filtrados['cluster_nombre'] = agentes_filtrados['cluster_id'].map(nombres_clusters)
